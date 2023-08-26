@@ -13,9 +13,12 @@ export class SeparateCurrentMonthsTransactions extends Feature {
     if (!this.isDateSorted()) return;
 
     const sortDirection = this.getSortDirection();
-
     const transaction = this.findPreviousMonthsTransaction(sortDirection);
-    transaction.classList.add('currentMonthSeparator');
+    if (sortDirection === 'desc') {
+      transaction.classList.add('currentMonthSeparatorTop');
+    } else if (sortDirection === 'asc') {
+      transaction.classList.add('currentMonthSeparatorBottom');
+    }
   }
 
   injectCSS() {
@@ -25,7 +28,11 @@ export class SeparateCurrentMonthsTransactions extends Feature {
   observe(changedNodes) {
     if (!this.shouldInvoke()) return;
 
-    if (changedNodes.has('ynab-grid-cell ynab-grid-cell-date user-data')) {
+    if (
+      changedNodes.has('ynab-grid-cell ynab-grid-cell-date user-data') ||
+      changedNodes.has('flaticon stroke sort-icon up') ||
+      changedNodes.has('flaticon stroke sort-icon down')
+    ) {
       this.invoke();
     }
   }
@@ -52,13 +59,27 @@ export class SeparateCurrentMonthsTransactions extends Feature {
     const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-    const previousMonthsTransaction = transactionDates.find((transaction) => {
-      let transactionDate = new Date(transaction.textContent.trim());
-      return (
-        previousMonth === transactionDate.getMonth() &&
-        previousYear === transactionDate.getFullYear()
-      );
-    });
+    let previousMonthsTransaction;
+
+    if (sortDirection === 'desc') {
+      previousMonthsTransaction = transactionDates.find((transaction) => {
+        let transactionDate = new Date(transaction.textContent.trim());
+        return (
+          previousMonth === transactionDate.getMonth() &&
+          previousYear === transactionDate.getFullYear()
+        );
+      });
+    } else if (sortDirection === 'asc') {
+      transactionDates.forEach((transaction) => {
+        let transactionDate = new Date(transaction.textContent.trim());
+        if (
+          previousMonth === transactionDate.getMonth() &&
+          previousYear === transactionDate.getFullYear()
+        ) {
+          previousMonthsTransaction = transaction;
+        }
+      });
+    }
     return previousMonthsTransaction.parentElement;
   }
 }
