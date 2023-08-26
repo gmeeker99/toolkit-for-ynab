@@ -6,7 +6,11 @@ const YNAB_DATE_CELL_CLASS = '.ynab-grid-cell.ynab-grid-cell-date.user-data';
 
 export class SeparateCurrentMonthsTransactions extends Feature {
   shouldInvoke() {
-    return true;
+    const dateHeader = document.querySelector(YNAB_DATE_HEADER_CLASS);
+    if (dateHeader) {
+      return true;
+    }
+    return false;
   }
 
   invoke() {
@@ -92,6 +96,7 @@ export class SeparateCurrentMonthsTransactions extends Feature {
     if (!previousMonthsTransaction) {
       return null;
     }
+
     return previousMonthsTransaction.parentElement;
   }
 }

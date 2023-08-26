@@ -4,5 +4,6 @@ module.exports = {
   default: false,
   section: 'accounts',
   title: 'Separate Current Months Transactions',
-  description: "Add a visual line to separate the current month's transaction",
+  description:
+    "Adds a distinct line between your current month's transactions and those from previous months, making it easier to see and manage your recent activity",
 };
