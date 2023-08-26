@@ -1,6 +1,8 @@
 import { Feature } from 'toolkit/extension/features/feature';
 
-// const TOOLKIT_FIRST_MONTHS_TRANSACTION_CLASS = 'tk-first-months-transaction';
+const YNAB_DATE_HEADER_CLASS =
+  '.ynab-grid-header-cell.js-ynab-grid-header-cell.ynab-grid-cell-date';
+const YNAB_DATE_CELL_CLASS = '.ynab-grid-cell.ynab-grid-cell-date.user-data';
 
 export class SeparateCurrentMonthsTransactions extends Feature {
   shouldInvoke() {
@@ -8,9 +10,12 @@ export class SeparateCurrentMonthsTransactions extends Feature {
   }
 
   invoke() {
-    const transaction = this.findPreviousMonthsTransaction();
+    if (!this.isDateSorted()) return;
+
+    const sortDirection = this.getSortDirection();
+
+    const transaction = this.findPreviousMonthsTransaction(sortDirection);
     transaction.classList.add('currentMonthSeparator');
-    console.log(this.isDateSorted() ? 'not sorted' : 'sorted');
   }
 
   injectCSS() {
@@ -26,42 +31,34 @@ export class SeparateCurrentMonthsTransactions extends Feature {
   }
 
   isDateSorted() {
-    const dateHeadersCollection = document.getElementsByClassName(
-      'ynab-grid-header-cell js-ynab-grid-header-cell ynab-grid-cell-date'
-    );
+    const dateHeader = document.querySelector(YNAB_DATE_HEADER_CLASS);
 
-    const dateHeader = [...dateHeadersCollection][0];
-    return !dateHeader.classList.contains('is-sorting');
+    const isDateSorted = dateHeader.classList.contains('is-sorting');
+
+    return isDateSorted;
   }
 
-  findPreviousMonthsTransaction() {
-    const transactionDatesCollection = document.getElementsByClassName(
-      'ynab-grid-cell ynab-grid-cell-date user-data'
-    );
+  getSortDirection() {
+    const dateSort = document.querySelector(YNAB_DATE_HEADER_CLASS.concat(' .sort-icon'));
+    const isAscending = dateSort.classList.contains('up');
+    return isAscending ? 'asc' : 'desc';
+  }
+
+  findPreviousMonthsTransaction(sortDirection) {
+    const transactionDates = Array.from(document.querySelectorAll(YNAB_DATE_CELL_CLASS));
 
     const currentMonth = new Date(Date.now()).getMonth();
     const currentYear = new Date(Date.now()).getFullYear();
-    const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
-    const previousYear = currentYear;
+    const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-    const transactionDates = [...transactionDatesCollection];
-
-    const previousMonthsTransactions = transactionDates.filter((transaction) => {
+    const previousMonthsTransaction = transactionDates.find((transaction) => {
       let transactionDate = new Date(transaction.textContent.trim());
       return (
         previousMonth === transactionDate.getMonth() &&
         previousYear === transactionDate.getFullYear()
       );
     });
-
-    previousMonthsTransactions.sort((a, b) => {
-      let transactionADate = new Date(a.textContent.trim());
-      let transactionBDate = new Date(b.textContent.trim());
-      return transactionBDate.getDate() - transactionADate.getDate();
-    });
-
-    const previousMonthsTransaction = previousMonthsTransactions[0];
-
     return previousMonthsTransaction.parentElement;
   }
 }
