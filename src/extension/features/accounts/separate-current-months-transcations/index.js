@@ -14,6 +14,11 @@ export class SeparateCurrentMonthsTransactions extends Feature {
 
     const sortDirection = this.getSortDirection();
     const transaction = this.findPreviousMonthsTransaction(sortDirection);
+
+    if (!transaction) {
+      return;
+    }
+
     if (sortDirection === 'desc') {
       transaction.classList.add('currentMonthSeparatorTop');
     } else if (sortDirection === 'asc') {
@@ -39,9 +44,7 @@ export class SeparateCurrentMonthsTransactions extends Feature {
 
   isDateSorted() {
     const dateHeader = document.querySelector(YNAB_DATE_HEADER_CLASS);
-
     const isDateSorted = dateHeader.classList.contains('is-sorting');
-
     return isDateSorted;
   }
 
@@ -54,31 +57,40 @@ export class SeparateCurrentMonthsTransactions extends Feature {
   findPreviousMonthsTransaction(sortDirection) {
     const transactionDates = Array.from(document.querySelectorAll(YNAB_DATE_CELL_CLASS));
 
-    const currentMonth = new Date(Date.now()).getMonth();
-    const currentYear = new Date(Date.now()).getFullYear();
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+
     const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
     const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+    const isPreviousMonthTransaction = (transactionDate) => {
+      return (
+        previousMonth === transactionDate.getMonth() &&
+        previousYear === transactionDate.getFullYear()
+      );
+    };
 
     let previousMonthsTransaction;
 
     if (sortDirection === 'desc') {
       previousMonthsTransaction = transactionDates.find((transaction) => {
-        let transactionDate = new Date(transaction.textContent.trim());
-        return (
-          previousMonth === transactionDate.getMonth() &&
-          previousYear === transactionDate.getFullYear()
-        );
+        const [month, day, year] = transaction.textContent.trim().split('/');
+        let transactionDate = new Date(year, month - 1, day);
+        return isPreviousMonthTransaction(transactionDate);
       });
     } else if (sortDirection === 'asc') {
       transactionDates.forEach((transaction) => {
-        let transactionDate = new Date(transaction.textContent.trim());
-        if (
-          previousMonth === transactionDate.getMonth() &&
-          previousYear === transactionDate.getFullYear()
-        ) {
+        const [month, day, year] = transaction.textContent.trim().split('/');
+        let transactionDate = new Date(year, month - 1, day);
+        if (isPreviousMonthTransaction(transactionDate)) {
           previousMonthsTransaction = transaction;
         }
       });
+    }
+
+    if (!previousMonthsTransaction) {
+      return null;
     }
     return previousMonthsTransaction.parentElement;
   }
